@@ -21,6 +21,8 @@ Resources:
       Environment:
         Variables:
           TZ: Asia/Tokyo
+          ProductId: !Ref ProductId
+          Env: !Ref Env
       Policies:
         - SSMParameterReadPolicy:
             ParameterName: '*'
