@@ -58,6 +58,17 @@ Resources:
     DependsOn:
       - ObjectCreatedEventWatcherPolicy
 
+  DataSetStoreBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DataSetStore
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: 's3:GetObject'
+            Resource: !Sub "arn:aws:s3:::${DataSetStore}/*"
+            Principal: '*'
+
   ObjectCreatedEventWatcher:
     Type: AWS::SNS::Topic
     Properties:
