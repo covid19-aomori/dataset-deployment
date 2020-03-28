@@ -1,0 +1,30 @@
+name: deploy-production
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+      - name: sam build
+        uses: youyo/aws-sam-action/python3.8@master
+        with:
+          sam_command: build
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-northeast-1
+      - name: sam deploy
+        uses: youyo/aws-sam-action/python3.8@master
+        with:
+          sam_command: 'deploy --stack-name covid19-aomori-production --s3-prefix covid19-aomori-production --no-fail-on-empty-changeset --parameter-overrides "ProductId=covid19-aomori" "Env=production"'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-northeast-1

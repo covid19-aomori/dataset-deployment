@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: dataset-deployment for covid19-aomori
+
+Parameters:
+  ProductId:
+    Type: String
+  Env:
+    Type: String
+
+Resources:
+  TriggerNetlifyDeployment:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProductId}-${Env}-trigger-netlify-deployment
+      Runtime: python3.8
+      CodeUri: function/
+      Handler: netlify.deploy
+      MemorySize: 128
+      Timeout: 30
+      Environment:
+        Variables:
+          TZ: Asia/Tokyo
+          ProductId: !Ref ProductId
+          Env: !Ref Env
+      Policies:
+        - SSMParameterReadPolicy:
+            ParameterName: '*'
+      Events:
+        ObjectCreated:
+          Type: SQS
+          Properties:
+            Enabled: true
+            Queue: !GetAtt NetlifyDeploymentQueue.Arn
+            BatchSize: 1
+      Tags:
+        ProductId: !Ref ProductId
+        Env: !Ref Env
+
+  DataSetStore:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${ProductId}-${Env}-dataset-store
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Status: Enabled
+            NoncurrentVersionExpirationInDays: 30
+      NotificationConfiguration:
+        TopicConfigurations:
+          - Event: 's3:ObjectCreated:*'
+            Topic: !Ref ObjectCreatedEventWatcher
+    DependsOn:
+      - ObjectCreatedEventWatcherPolicy
+
+  DataSetStoreBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DataSetStore
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: 's3:GetObject'
+            Resource: !Sub "arn:aws:s3:::${DataSetStore}/*"
+            Principal: '*'
+
+  ObjectCreatedEventWatcher:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${ProductId}-${Env}-object-created-event-watcher
+
+  ObjectCreatedEventWatcherPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref ObjectCreatedEventWatcher
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - sns:Publish
+            Resource:
+              - !Ref ObjectCreatedEventWatcher
+            Principal:
+              AWS: '*'
+            Condition:
+              ArnLike:
+                aws:SourceArn: !Sub arn:aws:s3:::${ProductId}-${Env}-dataset-store
+    DependsOn:
+      - ObjectCreatedEventWatcher
+
+  ObjectCreatedEventWatcherSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt NetlifyDeploymentQueue.Arn
+      TopicArn: !Ref ObjectCreatedEventWatcher
+
+  NetlifyDeploymentQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProductId}-${Env}-netlify-deployment-queue
+      VisibilityTimeout: 30
+
+  NetlifyDeploymentQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref NetlifyDeploymentQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: sqs:SendMessage
+            Resource: !GetAtt NetlifyDeploymentQueue.Arn
+            Principal:
+              AWS: '*'
+            Condition:
+              ArnLike:
+                aws:SourceArn: !Ref ObjectCreatedEventWatcher
