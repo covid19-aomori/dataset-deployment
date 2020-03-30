@@ -123,3 +123,33 @@ Resources:
             Condition:
               ArnLike:
                 aws:SourceArn: !Ref ObjectCreatedEventWatcher
+
+  PreviewBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${ProductId}-${Env}-preview
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Status: Enabled
+            ExpirationInDays: 30
+            NoncurrentVersionExpirationInDays: 30
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: 404.html
+
+  PreviewBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref PreviewBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: 's3:GetObject'
+            Resource: !Sub "arn:aws:s3:::${PreviewBucket}/*"
+            Principal: '*'
