@@ -1,7 +1,7 @@
 from jeffy.framework import setup
-import boto3
+# import boto3
 import os
-import requests
+# import requests
 
 
 app = setup()
@@ -13,6 +13,7 @@ env = os.environ.get('Env')
 @app.decorator.auto_logging
 @app.decorator.sqs
 def deploy(event, context):
+    """
     ssm = boto3.client('ssm')
     response = ssm.get_parameter(
         Name=f'/{product_id}/{env}/netlify/build_hook_url',
@@ -25,4 +26,10 @@ def deploy(event, context):
     return {
         'reason': response.reason,
         'status_code': response.status_code
+    }
+    """
+
+    return {
+        'reason': 'とりあえず何もしないよ',
+        'status_code': 200
     }
