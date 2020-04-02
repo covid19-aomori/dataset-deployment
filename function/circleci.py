@@ -24,6 +24,7 @@ def call_pipeline(event, context):
     branch = 'development'
     if env == 'production':
         branch = 'master'
+    app.logger.info({'branch': branch})
 
     project_slug = urllib.parse.quote('github/covid19-aomori/website')
 
