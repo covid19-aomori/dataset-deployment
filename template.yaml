@@ -15,7 +15,7 @@ Resources:
       FunctionName: !Sub ${ProductId}-${Env}-trigger-circleci-pipeline
       Runtime: python3.8
       CodeUri: function/
-      Handler: cicleci.call_pipeline
+      Handler: circleci.call_pipeline
       MemorySize: 128
       Timeout: 10
       Environment:
