@@ -2,7 +2,7 @@ from jeffy.framework import setup
 import boto3
 import os
 import requests
-import urllib.parse
+import json
 
 
 app = setup()
@@ -26,13 +26,11 @@ def call_pipeline(event, context):
         branch = 'master'
     app.logger.info({'branch': branch})
 
-    project_slug = urllib.parse.quote('github/covid19-aomori/website')
-
     response = requests.post(
-        f'https://circleci.com/api/v2/project/{project_slug}/pipeline',
-        params={
+        'https://circleci.com/api/v2/project/github/covid19-aomori/website/pipeline',
+        data=json.dumps({
             'branch': branch
-        },
+        }),
         headers={
             'Content-Type': 'application/json',
             'Accept': 'application/json',
