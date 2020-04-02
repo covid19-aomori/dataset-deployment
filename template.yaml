@@ -9,13 +9,13 @@ Parameters:
     Type: String
 
 Resources:
-  TriggerNetlifyDeployment:
+  TriggerCircleciPipeline:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${ProductId}-${Env}-trigger-netlify-deployment
+      FunctionName: !Sub ${ProductId}-${Env}-trigger-circleci-pipeline
       Runtime: python3.8
       CodeUri: function/
-      Handler: netlify.deploy
+      Handler: cicleci.call_pipeline
       MemorySize: 128
       Timeout: 30
       Environment:
@@ -31,7 +31,7 @@ Resources:
           Type: SQS
           Properties:
             Enabled: true
-            Queue: !GetAtt NetlifyDeploymentQueue.Arn
+            Queue: !GetAtt CircleciPipelineQueue.Arn
             BatchSize: 1
       Tags:
         ProductId: !Ref ProductId
@@ -98,26 +98,26 @@ Resources:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: sqs
-      Endpoint: !GetAtt NetlifyDeploymentQueue.Arn
+      Endpoint: !GetAtt CircleciPipelineQueue.Arn
       TopicArn: !Ref ObjectCreatedEventWatcher
 
-  NetlifyDeploymentQueue:
+  CircleciPipelineQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Sub ${ProductId}-${Env}-netlify-deployment-queue
+      QueueName: !Sub ${ProductId}-${Env}-circleci-pipeline-queue
       VisibilityTimeout: 30
 
-  NetlifyDeploymentQueuePolicy:
+  CircleciPipelineQueuePolicy:
     Type: AWS::SQS::QueuePolicy
     Properties:
       Queues:
-        - !Ref NetlifyDeploymentQueue
+        - !Ref CircleciPipelineQueue
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Action: sqs:SendMessage
-            Resource: !GetAtt NetlifyDeploymentQueue.Arn
+            Resource: !GetAtt CircleciPipelineQueue.Arn
             Principal:
               AWS: '*'
             Condition:
