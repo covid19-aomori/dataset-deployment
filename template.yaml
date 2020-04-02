@@ -17,7 +17,7 @@ Resources:
       CodeUri: function/
       Handler: cicleci.call_pipeline
       MemorySize: 128
-      Timeout: 30
+      Timeout: 10
       Environment:
         Variables:
           TZ: Asia/Tokyo
@@ -105,7 +105,7 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Sub ${ProductId}-${Env}-circleci-pipeline-queue
-      VisibilityTimeout: 30
+      VisibilityTimeout: 60
 
   CircleciPipelineQueuePolicy:
     Type: AWS::SQS::QueuePolicy
